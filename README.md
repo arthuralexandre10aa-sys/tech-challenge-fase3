@@ -28,8 +28,9 @@ A classe positiva do modelo é **"em risco" (não atingiu a meta)**.
 **Dados efetivos desta versão:** 5.232 municípios com meta e resultado em 2024 (46,1% em risco); 621 não têm medição em 2023.
 
 > ⚠️ **Estado do enriquecimento.** Os resultados abaixo foram obtidos **somente com a Gold**. O código de coleta das
-> fontes externas está pronto e testado quanto à lógica, mas **ainda não foi executado com dados reais** (o ambiente de desenvolvimento
-> não tinha acesso às APIs). Rode a coleta (seção 10) e refaça o treino para medir o ganho real das fontes externas (hipótese H4).
+> fontes externas está escrito, mas **nunca foi executado com dados reais** (o ambiente de desenvolvimento
+> não tinha acesso às APIs) e os nomes de tabelas/colunas da Base dos Dados e do SIDRA podem precisar de ajuste na primeira execução.
+> Só os utilitários de código IBGE têm teste unitário. Rode a coleta (seção 10) e refaça o treino para medir o ganho real das fontes externas (hipótese H4).
 
 ### Correção de um bug herdado da Fase 2
 Em 2023 não há meta (100% nula), mas a Gold marca `atingiu_meta = False` para todos (`NaN >= 0` é falso).
