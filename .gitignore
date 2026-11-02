@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.env
+data/external/*
+!data/external/.gitkeep
+!data/external/manual/
+data/external/manual/*
+!data/external/manual/README.md
+data/processed/*
+!data/processed/.gitkeep
+models/*
+!models/.gitkeep
+.DS_Store
