@@ -1,0 +1,11 @@
+fonte,tipo,nivel,descricao,status,linhas,colunas,erro
+ibge_territorio,sidra,municipio,"IBGE: população, área e densidade (Censo 2022)",falhou,0,0,"ProxyError: HTTPSConnectionPool(host='apisidra.ibge.gov.br', port=443): Max retries exceeded with url: /values/t/4714/n6/all/v/all/p/all (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connect"
+ibge_pib,sidra,municipio,IBGE: PIB municipal,falhou,0,0,"ProxyError: HTTPSConnectionPool(host='apisidra.ibge.gov.br', port=443): Max retries exceeded with url: /values/t/5938/n6/all/v/37/p/last (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connect"
+inep_censo_escolar,bigquery,municipio,Censo Escolar: nº de escolas e infraestrutura,ausente,0,0,
+inep_alunos_avaliados,bigquery,municipio,INEP: nº de alunos avaliados (confiabilidade do indicador),ausente,0,0,
+inep_ideb,bigquery,municipio,INEP: IDEB (educacional complementar),ausente,0,0,
+inep_metas_municipio,bigquery,municipio,Metas municipais futuras (para projeções; não é feature),ausente,0,0,
+atlas_idhm,manual,municipio,Atlas do Desenvolvimento Humano (IDHM e componentes),ausente,0,0,
+cadunico,manual,municipio,Cadastro Único: famílias e pobreza por município,ausente,0,0,
+fundeb,manual,municipio,FUNDEB: matrículas/repasses por município,ausente,0,0,
+pnad_uf,manual,uf,PNAD Contínua: indicadores socioeconômicos por UF,ausente,0,0,
