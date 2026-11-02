@@ -14,3 +14,7 @@ data/processed/*
 models/*
 !models/.gitkeep
 .DS_Store
+resultados_fase3.zip
+atualizacao_*
+*.zip
+.DS_Store
