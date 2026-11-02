@@ -25,10 +25,11 @@ import re
 import unicodedata
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import requests
 
-from src.config import ANO_ALVO, DATA_EXT, DATA_MANUAL, REPORTS
+from src.config import ANO_ALVO, ANO_ANT, DATA_EXT, DATA_MANUAL, REPORTS
 
 SIDRA = "https://apisidra.ibge.gov.br/values"
 TIMEOUT = 180
@@ -99,7 +100,7 @@ def _col_por_prefixo(df: pd.DataFrame, prefixo: str) -> str:
 def _sidra_para_municipio(df: pd.DataFrame, prefixo_var: str = "Variável") -> pd.DataFrame:
     """Pivota a resposta SIDRA (uma linha por município x variável) para colunas."""
     c_id = _col_por_prefixo(df, "Município (Código)")
-    c_var = _col_por_prefixo(df, prefixo_var)
+    c_var = prefixo_var if prefixo_var in df.columns else _col_por_prefixo(df, prefixo_var)
     c_val = _col_por_prefixo(df, "Valor")
     c_ano = "Ano" if "Ano" in df.columns else _col_por_prefixo(df, "Ano")
     out = df[[c_id, c_var, c_val, c_ano]].copy()
@@ -178,17 +179,31 @@ def coleta_inep_metas_municipio() -> pd.DataFrame:
 
 def aliases_ids() -> list[str]:
     return ["codmun6", "codmun7", "cod_ibge", "codigo_municipio", "co_municipio",
-            "cod_municipio", "municipio_codigo", "codigo_ibge", "id_municipio", "ano"]
+            "cod_municipio", "municipio_codigo", "codigo_ibge", "codigo_do_ente",
+            "id_municipio", "ano"]
 
 
-def _coleta_manual(nome: str, nivel: str):
+def _acha_arquivo(nome: str, padroes: list[str] | None = None) -> Path:
+    """Primeiro arquivo de ``data/external/manual/`` que casa com algum padrão (ignora temporários)."""
+    padroes = padroes or [f"{nome}.csv", f"{nome}.xlsx", f"{nome}.xls"]
+    for pat in padroes:
+        for p in sorted(DATA_MANUAL.glob(pat)):
+            if not p.name.startswith(("~$", ".")):
+                return p
+    raise FileNotFoundError(
+        f"coloque o arquivo em data/external/manual/ (nomes aceitos: {', '.join(padroes)})")
+
+
+def _coleta_manual(nome: str, nivel: str, padroes: list[str] | None = None,
+                   preparar=None, manter: list[str] | None = None, renomear: dict | None = None):
+    """Carregador de arquivo baixado manualmente.
+
+    ``padroes``  nomes de arquivo aceitos; ``preparar`` função que cria colunas derivadas;
+    ``manter``   subconjunto de colunas numéricas a usar; ``renomear`` renomeia colunas finais.
+    """
     def _f() -> pd.DataFrame:
-        arqs = [p for ext in ("csv", "xlsx", "xls") for p in DATA_MANUAL.glob(f"{nome}.{ext}")]
-        if not arqs:
-            raise FileNotFoundError(
-                f"coloque o arquivo em data/external/manual/{nome}.csv (ver README da pasta)")
-        p = arqs[0]
-        df = pd.read_csv(p, sep=None, engine="python") if p.suffix == ".csv" else pd.read_excel(p)
+        p = _acha_arquivo(nome, padroes)
+        df = _le_arquivo(p, nivel)
         df.columns = [slug(c) for c in df.columns]
         if nivel == "uf":
             col = next((c for c in ("sigla_uf", "uf") if c in df.columns), None)
@@ -204,10 +219,78 @@ def _coleta_manual(nome: str, nivel: str):
             df["id_municipio"] = normaliza_id_municipio(df[col])
             df = df.dropna(subset=["id_municipio"])
             chave = "id_municipio"
+        # séries com vários anos: só vale o dado mais recente disponível ATÉ ANO_ANT (nunca o futuro)
+        if "ano" in df.columns:
+            anos = pd.to_numeric(df["ano"], errors="coerce")
+            df = df[anos <= ANO_ANT].assign(_ano=anos).sort_values("_ano").drop(columns="_ano")
+            df = df.groupby(chave, as_index=False).last()
+        if preparar is not None:
+            df = preparar(df)
         nums = [c for c in df.columns if c != chave and pd.api.types.is_numeric_dtype(df[c])
                 and c not in aliases_ids()]
-        return df[[chave, *nums]].drop_duplicates(chave)
+        if manter is not None:
+            nums = [c for c in manter if c in nums]
+            if not nums:
+                raise KeyError(f"nenhuma das colunas esperadas existe em {p.name}: {manter[:5]}...")
+        out = df[[chave, *nums]].drop_duplicates(chave)
+        return out.rename(columns=renomear or {})
     return _f
+
+
+def _le_arquivo(p: Path, nivel: str) -> pd.DataFrame:
+    """Lê CSV/Excel. Em Excel com várias abas, usa a que tem coluna de código e mais linhas."""
+    if p.suffix == ".csv":
+        df = pd.read_csv(p)
+        return df if df.shape[1] > 1 else pd.read_csv(p, sep=None, engine="python")
+    abas = pd.read_excel(p, sheet_name=None)
+    chaves = ["sigla_uf", "uf"] if nivel == "uf" else [a for a in aliases_ids() if a not in ("ano",)]
+    boas = {n: d for n, d in abas.items() if any(slug(c) in chaves for c in d.columns)}
+    if not boas:
+        raise KeyError(f"nenhuma aba de {p.name} tem coluna de código; abas: {list(abas)}")
+    return boas[max(boas, key=lambda n: len(boas[n]))]
+
+
+# --- Atlas do Desenvolvimento Humano (Base dos Dados: mundo_onu_adh.municipio; Censo 1991/2000/2010)
+# Das 230 colunas, mantemos as ligadas a renda, pobreza, escolaridade, frequência escolar,
+# saneamento e demografia. Edite a lista para testar outras variáveis.
+ATLAS_COLUNAS = [
+    "idhm", "idhm_e", "idhm_l", "idhm_r", "indice_gini", "renda_pc",
+    "prop_pobreza", "prop_pobreza_extrema", "prop_pobreza_criancas",
+    "prop_pobreza_extrema_criancas", "prop_vulner_pobreza",
+    "taxa_analfabetismo_11_a_14", "taxa_analfabetismo_15_mais", "taxa_analfabetismo_25_mais",
+    "expectativa_anos_estudo", "indice_escolaridade", "indice_frequencia_escolar",
+    "taxa_freq_5_6", "taxa_freq_6_14", "taxa_freq_liquida_fundamental", "taxa_freq_bruta_pre",
+    "taxa_criancas_fora_escola_6_14", "taxa_criancas_fora_escola_4_5", "taxa_atraso_0_fundamental",
+    "taxa_fundamental_18_mais", "taxa_medio_18_mais",
+    "taxa_agua_encanada", "taxa_coleta_lixo", "taxa_energia_eletrica", "taxa_densidade_2_mais",
+    "expectativa_vida", "mortalidade_5", "fecundidade_total", "razao_dependencia",
+    "taxa_envelhecimento", "taxa_mulheres_com_filho_15_17",
+    "taxa_desocupacao_18_mais", "taxa_atividade_18_mais", "taxa_ocupados_sem_carteira",
+    "prop_ocupados_agropecuaria", "pct_urbana",
+]
+
+
+def _prepara_atlas(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    if {"populacao_urbana", "populacao"} <= set(df.columns):
+        df["pct_urbana"] = 100 * df["populacao_urbana"] / df["populacao"].replace(0, np.nan)
+    return df
+
+
+def coleta_diretorio() -> pd.DataFrame:
+    """Tabela de diretórios da Base dos Dados: só sinalizadores do MUNICÍPIO (capital, região metropolitana).
+
+    Ficam de fora microrregião/mesorregião, centroide e Amazônia Legal: identificam o estado
+    indiretamente, o que contraria a decisão de não usar UF no modelo.
+    """
+    p = _acha_arquivo("diretorio_municipios",
+                      ["diretorio_municipios.csv", "*diretorios_brasil_municipio*.csv"])
+    df = pd.read_csv(p, dtype=str)
+    return pd.DataFrame({
+        "id_municipio": normaliza_id_municipio(df["id_municipio"]),
+        "capital_uf": pd.to_numeric(df["capital_uf"], errors="coerce").fillna(0).astype(int),
+        "em_regiao_metropolitana": df["id_regiao_metropolitana"].notna().astype(int),
+    })
 
 
 # Catálogo: nome -> (tipo, nível, função, descrição, é feature?)
@@ -224,12 +307,23 @@ FONTES = {
                               "INEP: IDEB (educacional complementar)", True),
     "inep_metas_municipio":  ("bigquery", "municipio", coleta_inep_metas_municipio,
                               "Metas municipais futuras (para projeções; não é feature)", False),
-    "atlas_idhm":            ("manual",   "municipio", _coleta_manual("atlas_idhm", "municipio"),
-                              "Atlas do Desenvolvimento Humano (IDHM e componentes)", True),
+    "atlas_idhm":            ("manual",   "municipio",
+                              _coleta_manual("atlas_idhm", "municipio",
+                                             padroes=["atlas_idhm.csv", "atlas_idhm.xlsx",
+                                                      "*adh_municipio*.csv", "*adh_municipio*.xlsx"],
+                                             preparar=_prepara_atlas, manter=ATLAS_COLUNAS),
+                              "Atlas do Desenvolvimento Humano (Censo 2010): renda, pobreza, escolaridade", True),
     "cadunico":              ("manual",   "municipio", _coleta_manual("cadunico", "municipio"),
                               "Cadastro Único: famílias e pobreza por município", True),
-    "fundeb":                ("manual",   "municipio", _coleta_manual("fundeb", "municipio"),
-                              "FUNDEB: matrículas/repasses por município", True),
+    "fundeb":                ("manual",   "municipio",
+                              _coleta_manual("fundeb", "municipio",
+                                             padroes=["fundeb.csv", "fundeb.xlsx", "*Fundeb*.xlsx",
+                                                      "*fundeb*.xlsx", "*fundeb*.csv"],
+                                             manter=["valor_do_nivel_socioeconomico"],
+                                             renomear={"valor_do_nivel_socioeconomico": "nse"}),
+                              "FUNDEB 2023: Nível Socioeconômico (NSE) do município", True),
+    "diretorio_municipios":  ("manual",   "municipio", coleta_diretorio,
+                              "Diretório BD: capital e região metropolitana (sinalizadores do município)", True),
     "pnad_uf":               ("manual",   "uf",        _coleta_manual("pnad_uf", "uf"),
                               "PNAD Contínua: indicadores socioeconômicos por UF", True),
 }

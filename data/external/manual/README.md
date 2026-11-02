@@ -1,21 +1,24 @@
-# Fontes que o grupo precisa baixar manualmente
+# Fontes baixadas manualmente
 
-Coloque os arquivos nesta pasta (CSV ou XLSX). O código padroniza os nomes das colunas
-e usa a primeira coluna de código de município que encontrar
-(`id_municipio`, `cod_ibge`, `codmun6`, `codmun7`, `codigo_municipio`...).
-Códigos de 6 dígitos recebem o dígito verificador automaticamente.
+Coloque os arquivos **com o nome original** nesta pasta (o código reconhece os padrões abaixo).
+Códigos de município de 6 ou 7 dígitos são aceitos; séries com vários anos usam o dado mais recente **até 2023**.
 
-| Arquivo | Fonte | Nível | Onde obter |
+| Fonte | Arquivo aceito | Nível | O que usamos |
 |---|---|---|---|
-| `atlas_idhm.csv` | Atlas do Desenvolvimento Humano (IDHM, IDHM Educação, renda, longevidade) | município | atlasbrasil.org.br → Download |
-| `cadunico.csv` | Cadastro Único (famílias cadastradas, % em extrema pobreza) | município | MDS/VIS DATA ou Base dos Dados |
-| `fundeb.csv` | FUNDEB (matrículas ou repasses) | município | FNDE / Tesouro Transparente |
-| `pnad_uf.csv` | PNAD Contínua (renda, escolaridade, informalidade) | **UF** (coluna `sigla_uf`) | SIDRA/IBGE |
+| Atlas do Desenvolvimento Humano (Base dos Dados, `mundo_onu_adh.municipio`) | `mundo_onu_adh_municipio.csv` ou `atlas_idhm.csv` | município | 41 de 230 colunas (IDHM, renda, pobreza, escolaridade, frequência escolar, saneamento) — dados do Censo 2010 |
+| FUNDEB — Nível Socioeconômico (NSE) por ente federado, 2023 | `NSE_Entes_Federados_Fundeb2023.xlsx` ou `fundeb.xlsx` | município (linhas de UF são ignoradas) | `nse` (o ponderador é redundante: correlação −1,00 com o NSE) |
+| Diretório de municípios (Base dos Dados, `br_bd_diretorios_brasil.municipio`) | `br_bd_diretorios_brasil_municipio.csv` ou `diretorio_municipios.csv` | município | `capital_uf`, `em_regiao_metropolitana` |
+| Cadastro Único (opcional) | `cadunico.csv` / `.xlsx` | município | colunas numéricas |
+| PNAD por UF (opcional) | `pnad_uf.csv` | UF (coluna `sigla_uf`) | **não entra no modelo** (constante por UF = "código da UF"); só para análise |
 
-Somente colunas **numéricas** entram no modelo. Depois de colocar os arquivos:
+Por que o diretório entra só com dois sinalizadores: microrregião, mesorregião, centroide e Amazônia Legal
+identificam o estado indiretamente, o que contraria a decisão de não usar UF no modelo.
+O nome do município já vem na Gold da Fase 2, então a tabela não é necessária para isso.
+
+Depois de colocar os arquivos:
 
 ```bash
-python -m src.preprocessing.external_sources --only atlas_idhm cadunico fundeb pnad_uf
+python -m src.preprocessing.external_sources --only atlas_idhm fundeb diretorio_municipios
 python -m src.preprocessing.build_dataset && python -m src.modeling.train && python -m src.evaluation.run_evaluation
 ```
 

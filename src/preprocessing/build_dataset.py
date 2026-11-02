@@ -15,7 +15,7 @@ from __future__ import annotations
 import pandas as pd
 
 from src.config import (ANO_ALVO, ANO_ANT, DATA_EXT, DATA_PROC, DATA_RAW, FORBIDDEN_FEATURES,
-                        ID_COLS, TARGET, UF_REGIAO)
+                        ID_COLS, PREFIXOS_UF_PROXY, TARGET, UF_COLS, UF_REGIAO, USAR_UF_NO_MODELO)
 
 NAO_FEATURES = set(ID_COLS) | FORBIDDEN_FEATURES | {"nome_uf", "ano"}
 
@@ -69,7 +69,15 @@ def anexa_externas(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
 
 def colunas_features(df: pd.DataFrame) -> list[str]:
-    return [c for c in df.columns if c not in NAO_FEATURES]
+    """Colunas usadas pelo modelo. Com ``USAR_UF_NO_MODELO=False`` removem-se UF, região e
+    fontes estaduais (que identificariam a UF indiretamente)."""
+    excluir = set(NAO_FEATURES)
+    if not USAR_UF_NO_MODELO:
+        excluir |= set(UF_COLS)
+    cols = [c for c in df.columns if c not in excluir]
+    if not USAR_UF_NO_MODELO:
+        cols = [c for c in cols if not c.startswith(PREFIXOS_UF_PROXY)]
+    return cols
 
 
 def verifica_leakage(cols: list[str]) -> None:
