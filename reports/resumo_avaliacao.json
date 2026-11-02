@@ -1,0 +1,69 @@
+{
+  "top5_shap": [
+    {
+      "feature": "meta_alvo_rel_uf",
+      "shap_medio_abs": 0.3840468187697972
+    },
+    {
+      "feature": "sigla_uf_RS",
+      "shap_medio_abs": 0.32294874416158054
+    },
+    {
+      "feature": "sigla_uf_MG",
+      "shap_medio_abs": 0.3097556755213768
+    },
+    {
+      "feature": "prof_ant",
+      "shap_medio_abs": 0.25348641730732374
+    },
+    {
+      "feature": "sigla_uf_BA",
+      "shap_medio_abs": 0.16246250686039113
+    }
+  ],
+  "top5_permutacao": [
+    {
+      "feature": "sigla_uf",
+      "queda_roc_auc": 0.2475444363684419,
+      "desvio": 0.011257410999871586
+    },
+    {
+      "feature": "meta_alvo",
+      "queda_roc_auc": 0.1457903836835382,
+      "desvio": 0.012023577913405074
+    },
+    {
+      "feature": "prof_ant",
+      "queda_roc_auc": 0.03715750407471035,
+      "desvio": 0.007231725526285824
+    },
+    {
+      "feature": "pct_ant",
+      "queda_roc_auc": 0.030586941838098188,
+      "desvio": 0.006628832180446899
+    },
+    {
+      "feature": "regiao",
+      "queda_roc_auc": 0.00848521724446793,
+      "desvio": 0.003086934669039009
+    }
+  ],
+  "k_clusters": 2,
+  "silhouette": {
+    "2": 0.418,
+    "3": 0.361,
+    "4": 0.348,
+    "5": 0.321,
+    "6": 0.307,
+    "7": 0.311,
+    "8": 0.299
+  },
+  "ufs_maior_risco": [
+    "RS",
+    "BA",
+    "PA",
+    "AM",
+    "RJ"
+  ],
+  "projecao": "metas futuras não coletadas (rode external_sources)"
+}
