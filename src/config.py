@@ -26,6 +26,15 @@ FORBIDDEN_FEATURES = {
 
 ID_COLS = ["id_municipio", "nome_municipio"]
 
+# Decisão analítica: UF e região NÃO entram no modelo (o modelo deve aprender com características do
+# município, não com a identidade do estado). Isso vale também para:
+#   * as variáveis "relativas à UF" (pct_ant_rel_uf, meta_alvo_rel_uf), que codificam a UF;
+#   * fontes em nível estadual (PNAD por UF), que são constantes dentro da UF e funcionam como "código da UF".
+# A coluna sigla_uf continua no dataset apenas para validação por grupo (GroupKFold) e para relatórios.
+USAR_UF_NO_MODELO = False
+UF_COLS = ("sigla_uf", "regiao")
+PREFIXOS_UF_PROXY = ("ext_pnad_uf__",)
+
 UF_REGIAO = {
     **dict.fromkeys(["AC", "AM", "AP", "PA", "RO", "RR", "TO"], "Norte"),
     **dict.fromkeys(["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"], "Nordeste"),

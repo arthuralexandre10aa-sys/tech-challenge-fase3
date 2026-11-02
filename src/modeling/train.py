@@ -16,6 +16,7 @@ import json
 import warnings
 
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import (GroupKFold, RandomizedSearchCV, StratifiedKFold,
@@ -28,7 +29,21 @@ from src.preprocessing.build_dataset import colunas_features, verifica_leakage
 
 warnings.filterwarnings("ignore")
 SCORING = {"roc_auc": "roc_auc", "pr_auc": "average_precision", "f1": "f1", "accuracy": "accuracy"}
-N_ITER = 12
+N_ITER = 20
+
+
+def escolhe_modelo(cmp: pd.DataFrame, n_folds: int = 5) -> tuple[str, str]:
+    """Regra do 1 erro-padrão adaptada: entre os modelos cujo ROC-AUC de CV está a até 1 erro-padrão do
+    melhor, escolhe o de MENOR gap treino->CV (o que menos memoriza). Não paga overfitting por ganhos
+    que estão dentro do ruído da validação."""
+    cand = cmp[cmp["modelo"] != "dummy"]
+    topo = cand.loc[cand["cv_roc_auc"].idxmax()]
+    margem = topo["cv_roc_auc_std"] / np.sqrt(n_folds)
+    ok = cand[cand["cv_roc_auc"] >= topo["cv_roc_auc"] - margem]
+    esc = ok.sort_values(["gap_treino_cv", "cv_roc_auc"], ascending=[True, False]).iloc[0]["modelo"]
+    regra = (f"1 erro-padrão: melhor CV={topo['cv_roc_auc']:.4f} ({topo['modelo']}), margem={margem:.4f}; "
+             f"entre os candidatos dentro da margem, escolhido o de menor gap treino->CV")
+    return str(esc), regra
 
 
 def _tam(espaco: dict) -> int:
@@ -77,10 +92,11 @@ def main() -> None:
         print(f"{nome:18s} CV roc_auc={linha['cv_roc_auc']:.4f} f1={linha['cv_f1']:.4f}")
 
     cmp = pd.DataFrame(linhas).sort_values("cv_roc_auc", ascending=False)
+    cmp["gap_treino_cv"] = cmp["train_roc_auc"] - cmp["cv_roc_auc"]
     cmp.to_csv(REPORTS / "comparacao_modelos_cv.csv", index=False)
-    escolhido = cmp.iloc[0]["modelo"]
+    escolhido, regra = escolhe_modelo(cmp)
     modelo_final = melhores[escolhido]
-    print("Modelo escolhido (maior ROC-AUC em CV no treino):", escolhido)
+    print("Modelo escolhido:", escolhido, "|", regra)
 
     oof = cross_val_predict(clone(modelo_final), X_tr, y_tr, cv=cv, method="predict_proba")[:, 1]
     limiar = melhor_limiar_f1(y_tr, oof)
@@ -98,7 +114,7 @@ def main() -> None:
                         scoring=SCORING, n_jobs=-1)
     grupo_cv = {k: float(gk[f"test_{k}"].mean()) for k in SCORING}
 
-    sat = {"modelo": escolhido, "n_treino": int(len(X_tr)), "n_teste": int(len(X_te)),
+    sat = {"modelo": escolhido, "regra_selecao": regra, "n_treino": int(len(X_tr)), "n_teste": int(len(X_te)),
            "n_features_brutas": len(feats), "taxa_risco": float(y.mean()),
            "limiar_otimo_oof": limiar, "teste_limiar_0.5": m_te, "teste_limiar_otimo": m_te_lim,
            "treino_limiar_0.5": m_tr, "baselines_teste": base, "cv_por_uf_treino": grupo_cv,

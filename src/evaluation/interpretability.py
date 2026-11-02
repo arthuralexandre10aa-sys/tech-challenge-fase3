@@ -25,13 +25,13 @@ def importancia_nativa(pipe) -> pd.DataFrame:
     return pd.DataFrame({"feature": nomes, "importancia": v}).sort_values("importancia", ascending=False)
 
 
-def importancia_permutacao(pipe, X_te, y_te, n_repeats: int = 20) -> pd.DataFrame:
+def importancia_permutacao(pipe, X_te, y_te, n_repeats: int = 20, scoring: str = "roc_auc") -> pd.DataFrame:
     """Importância por permutação nas colunas ORIGINAIS (antes do pré-processamento)."""
-    r = permutation_importance(pipe, X_te, y_te, scoring="roc_auc", n_repeats=n_repeats,
+    r = permutation_importance(pipe, X_te, y_te, scoring=scoring, n_repeats=n_repeats,
                                random_state=RANDOM_STATE, n_jobs=-1)
-    return (pd.DataFrame({"feature": X_te.columns, "queda_roc_auc": r.importances_mean,
-                          "desvio": r.importances_std})
-            .sort_values("queda_roc_auc", ascending=False))
+    col = {"roc_auc": "queda_roc_auc", "r2": "queda_r2"}.get(scoring, "queda_score")
+    return (pd.DataFrame({"feature": X_te.columns, col: r.importances_mean, "desvio": r.importances_std})
+            .sort_values(col, ascending=False))
 
 
 def shap_valores(pipe, X_te: pd.DataFrame, amostra: int = 800):
@@ -52,11 +52,12 @@ def shap_valores(pipe, X_te: pd.DataFrame, amostra: int = 800):
     return sv, np.asarray(Xt), nomes
 
 
-def salva_shap(sv, Xt, nomes, arquivo: str = "shap_summary.png"):
+def salva_shap(sv, Xt, nomes, arquivo: str = "shap_summary.png",
+               titulo: str = "SHAP: impacto de cada variável no risco de não atingir a meta"):
     IMAGES.mkdir(exist_ok=True)
     plt.figure()
     shap.summary_plot(sv, Xt, feature_names=nomes, show=False, max_display=15)
-    plt.title("SHAP: impacto de cada variável no risco de não atingir a meta")
+    plt.title(titulo)
     plt.savefig(IMAGES / arquivo, dpi=140, bbox_inches="tight")
     plt.close()
     resumo = (pd.DataFrame({"feature": nomes, "shap_medio_abs": np.abs(sv).mean(axis=0)})

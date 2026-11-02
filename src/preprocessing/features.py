@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-_LOG_HINTS = ("populacao", "pib", "qtd_", "area", "densidade", "matricula", "repasse", "familias")
+_LOG_HINTS = ("populacao_residente", "pib", "qtd_", "area_da_unidade", "densidade_demografica",
+              "matricula", "repasse", "familias")
 
 
 class DerivedFeatures(BaseEstimator, TransformerMixin):
@@ -53,3 +54,32 @@ class UFRelativeStats(BaseEstimator, TransformerMixin):
             media_uf = X["sigla_uf"].map(self.medias_[c]).fillna(self.global_[c])
             X[f"{c}_rel_uf"] = X[c] - media_uf
         return X
+
+
+class CorrelationFilter(BaseEstimator, TransformerMixin):
+    """Remove colunas quase duplicadas (|correlação| > limite). Decidido só com o treino de cada fold.
+
+    Reduz overfitting: o Atlas, por exemplo, traz dezenas de variáveis quase idênticas (IDHM e seus
+    componentes, taxas de pobreza em várias faixas) e os indicadores de ausência repetem o mesmo padrão.
+    """
+
+    def __init__(self, limite: float = 0.90):
+        self.limite = limite
+
+    def fit(self, X, y=None):
+        X = np.asarray(X, dtype=float)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            c = np.nan_to_num(np.abs(np.corrcoef(X, rowvar=False)))
+        manter = np.ones(X.shape[1], dtype=bool)
+        for i in range(X.shape[1]):
+            if manter[i]:
+                manter[i + 1:][c[i, i + 1:] > self.limite] = False
+        self.mask_ = manter
+        self.n_features_in_ = X.shape[1]
+        return self
+
+    def transform(self, X):
+        return np.asarray(X)[:, self.mask_]
+
+    def get_feature_names_out(self, input_features=None):
+        return np.asarray(input_features, dtype=object)[self.mask_]

@@ -1,0 +1,67 @@
+{
+  "contexto": {
+    "modelo": "gradient_boosting",
+    "r2_cv": 0.4919362288364453,
+    "r2_teste": 0.48735653512691957,
+    "r2_por_uf": 0.016667045377532295,
+    "mae_teste_pp": 10.418634265909855,
+    "top5_fatores": [
+      {
+        "feature": "ext_inep_ideb__nota_saeb_matematica",
+        "queda_r2": 0.33912823939490255
+      },
+      {
+        "feature": "ext_fundeb__nse",
+        "queda_r2": 0.05110054548929797
+      },
+      {
+        "feature": "ext_inep_ideb__taxa_aprovacao",
+        "queda_r2": 0.045558533170592316
+      },
+      {
+        "feature": "ext_inep_alunos_avaliados__qtd_alunos_avaliados",
+        "queda_r2": 0.023668859179531116
+      },
+      {
+        "feature": "ext_atlas_idhm__taxa_energia_eletrica",
+        "queda_r2": 0.021964071469061652
+      }
+    ]
+  },
+  "contexto_sem_desempenho": {
+    "modelo": "gradient_boosting",
+    "r2_cv": 0.3671561818594373,
+    "r2_teste": 0.355730063488121,
+    "r2_por_uf": -0.2132104160085663,
+    "mae_teste_pp": 12.105866564982113,
+    "top5_fatores": [
+      {
+        "feature": "ext_atlas_idhm__indice_frequencia_escolar",
+        "queda_r2": 0.11239656671661905
+      },
+      {
+        "feature": "ext_atlas_idhm__taxa_analfabetismo_11_a_14",
+        "queda_r2": 0.09988384208933332
+      },
+      {
+        "feature": "ext_fundeb__nse",
+        "queda_r2": 0.061285198604512814
+      },
+      {
+        "feature": "ext_atlas_idhm__taxa_analfabetismo_15_mais",
+        "queda_r2": 0.03707728417582151
+      },
+      {
+        "feature": "ext_atlas_idhm__taxa_energia_eletrica",
+        "queda_r2": 0.03456959606700887
+      }
+    ]
+  },
+  "contexto_mais_historico": {
+    "modelo": "gradient_boosting",
+    "r2_cv": 0.5775499717441035,
+    "r2_teste": 0.5736033500664048,
+    "r2_por_uf": 0.1740703538104497,
+    "mae_teste_pp": 9.532430388739375
+  }
+}
