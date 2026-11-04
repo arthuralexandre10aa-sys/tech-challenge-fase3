@@ -13,7 +13,7 @@ from src.config import RANDOM_STATE, TARGET
 
 
 def colunas_cluster(df: pd.DataFrame) -> list[str]:
-    base = ["pct_ant", "pct_alvo", "prof_ant", "prof_alvo", "meta_alvo"]
+    base = ["pct_ant", "pct_alvo", "prof_ant", "prof_alvo"]
     ext = [c for c in df.columns if c.startswith("ext_") and pd.api.types.is_numeric_dtype(df[c])
            and df[c].notna().mean() > .6]
     return [c for c in base if c in df.columns] + ext

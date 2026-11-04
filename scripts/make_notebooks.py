@@ -37,7 +37,7 @@ display(cob)'''),
 display(t.round(2))
 print("nulos:", ind.isna().sum().to_dict())
 display(Image(plots.distribuicao_alfabetizacao(ind)))'''),
-("md", "## 2. Construção do alvo (sem leakage)\n\nDesenho temporal: **desempenho de 2023 + meta de 2024 → atingiu a meta em 2024?**  \nO `percentual_alfabetizado` e a proficiência de 2024 definem o alvo, então ficam **fora** das features."),
+("md", "## 2. Construção do alvo (sem leakage)\n\nDesenho temporal: **desempenho de 2023 + contexto → atingiu a meta em 2024?**  \nO `percentual_alfabetizado` e a proficiência de 2024 definem o alvo, então ficam **fora** das features. A **meta de 2024** também fica fora: ela é o limiar do alvo e carrega a política de metas de cada estado (ver notebook 02)."),
 ("code", '''df, usadas = constroi()
 print(df.shape, "| fontes externas:", usadas or "nenhuma ainda")
 print("taxa de risco (não atingiu):", round(df[TARGET].mean(), 3))
@@ -80,7 +80,7 @@ F = json.loads((REPORTS / "fatores_resumo.json").read_text())'''),
 ("code", '''cmp = pd.read_csv(REPORTS / "comparacao_modelos_cv.csv")
 display(cmp.drop(columns="melhores_params").round(4))
 print("modelo escolhido:", M["modelo"]); print(M["regra_selecao"])'''),
-("md", "O Gradient Boosting tem a maior média de CV, mas a diferença para a Regressão Logística (≈0,004) é **menor que o erro-padrão** da validação. Pela regra do 1 erro-padrão, entre os modelos tecnicamente empatados escolhemos o de **menor distância treino→validação** (`gap_treino_cv`): a Regressão Logística (0,020, contra 0,080 do Gradient Boosting)."),
+("md", "Sem a meta, o Gradient Boosting tem a maior média de CV (0,720) e é o **único dentro da margem de 1 erro-padrão** (0,008): a Random Forest fica em 0,705 e a Regressão Logística em 0,699. Por isso ele é o modelo escolhido, mesmo com o maior gap treino→validação (0,089)."),
 ("md", "## 2. Desempenho no hold-out de teste (separado antes de qualquer ajuste)"),
 ("code", '''tab = pd.DataFrame({"teste @0.5": M["teste_limiar_0.5"], f"teste @{M['limiar_otimo_oof']:.2f} (limiar via OOF)": M["teste_limiar_otimo"],
                     "treino @0.5": M["treino_limiar_0.5"]}).T
@@ -91,32 +91,36 @@ display(Image(str(IMAGES / "modelo_roc_pr.png"))); display(Image(str(IMAGES / "m
 ("code", '''print("gap ROC-AUC treino - teste:", round(M["gap_roc_auc_treino_vs_teste"], 4))
 print("CV aleatória (treino), modelo escolhido:", cmp[cmp.modelo == M["modelo"]][["cv_roc_auc", "cv_f1"]].round(4).to_dict("records")[0])
 print("CV POR UF (estados não vistos):", {k: round(v, 4) for k, v in M["cv_por_uf_treino"].items()})'''),
-("md", "**Leitura honesta:** o gap treino↔teste é pequeno (0,031; era 0,138 na primeira versão, com UF e grades amplas). Quando o modelo é avaliado em **UFs que nunca viu**, o ROC-AUC é **0,638**, bem acima do 0,56 que tínhamos com a Gold sozinha, mas ainda abaixo da validação aleatória (0,742). Parte do ganho vem das fontes externas (SAEB, NSE, pobreza); a diferença restante é a política de metas de cada estado, que o modelo não enxerga sem a UF."),
+("md", "**Leitura honesta:** o gap treino↔teste é 0,092 (treino 0,801, teste 0,709): há algum overfitting residual (era 0,138 na primeira versão, com UF e grades amplas, e 0,031 quando a meta entrava no modelo). Em **UFs que nunca viu**, o ROC-AUC é **0,568**: sem a meta e sem a UF, o contexto separa regiões mais do que municípios de uma mesma região."),
 ("md", "## 4. Interpretabilidade: Feature Importance, Permutation Importance e SHAP"),
 ("code", '''for f in ["modelo_importancia_nativa.png", "modelo_importancia_permutacao.png", "shap_summary.png"]:
     display(Image(str(IMAGES / f)))
 display(pd.read_csv(REPORTS / "importancia_permutacao.csv").head(8).round(4))'''),
-("md", "`meta_alvo` e `prof_ant` lideram nas três medidas. Em seguida vêm **nota de matemática do SAEB**, **NSE do FUNDEB**, **pobreza extrema** e **envelhecimento** (Atlas). O contexto socioeconômico aparece, mas como complemento ao histórico e à meta."),
+("md", "Sem a meta, a importância se espalha. Lideram a **nota de matemática do SAEB**, a **proficiência de 2023**, a **taxa de aprovação**, o **NSE do FUNDEB** e a **informalidade do trabalho** (Atlas). O contexto educacional e socioeconômico passa a ser o centro do modelo."),
 ("md", "## 5. Municípios de maior risco"),
 ("code", '''risco = pd.read_csv(REPORTS / "risco_municipios_2024.csv")
 display(risco.head(15).round(3))
 display(pd.read_csv(REPORTS / "risco_por_uf.csv").head(10))'''),
-("md", "As probabilidades vêm de predição *out-of-fold*: nenhum município é previsto por um modelo que viu o próprio rótulo. **Atenção:** sem a UF, o modelo subestima estados com metas rígidas (ex.: RS tem 92% de municípios realmente em risco, e o risco médio previsto é 0,67)."),
+("md", "As probabilidades vêm de predição *out-of-fold*: nenhum município é previsto por um modelo que viu o próprio rótulo. **Atenção:** sem a UF e sem a meta, o modelo subestima estados com metas rígidas (ex.: RS tem 92% de municípios realmente em risco, e o risco médio previsto é 0,68)."),
 ("md", "## 6. Regiões com padrões semelhantes (K-Means)"),
 ("code", '''display(pd.read_csv(REPORTS / "silhouette_por_k.csv"))
 perfil = pd.read_csv(REPORTS / "perfil_grupos.csv").set_index("grupo")
-display(perfil[["n_municipios", "taxa_risco", "pct_ant", "pct_alvo", "meta_alvo", "ext_atlas_idhm__idhm",
+display(perfil[["n_municipios", "taxa_risco", "pct_ant", "pct_alvo", "ext_atlas_idhm__idhm",
                 "ext_atlas_idhm__renda_pc", "ext_atlas_idhm__prop_pobreza", "ext_fundeb__nse",
                 "ext_inep_ideb__nota_saeb_matematica"]].T.round(2))
 display(Image(str(IMAGES / "cluster_pca.png"))); display(Image(str(IMAGES / "cluster_composicao_regiao.png")))'''),
-("md", "Os grupos separam **contexto**, não risco: o grupo 0 (3.046 municípios, 46% Sudeste, 34% Sul) tem IDHM 0,71 e pobreza de 8%; o grupo 1 (2.186, 74% Nordeste) tem IDHM 0,59 e pobreza de 41%. A taxa de risco é parecida (44% vs 49%) porque as metas do grupo 1 são mais baixas. O silhouette (0,288) indica estrutura fraca: tratamos como **segmentação grosseira**, não como tipologia."),
-("md", "## 7. Municípios que podem não atingir metas futuras (2025)"),
+("md", "Os grupos separam **contexto**, não risco: o grupo 1 (3.038 municípios, 46% Sudeste, 34% Sul) tem IDHM 0,71 e pobreza de 8%; o grupo 0 (2.194, 74% Nordeste) tem IDHM 0,59 e pobreza de 41%. A taxa de risco é parecida (44% vs 49%) porque as metas do grupo 0 são mais baixas. O silhouette (0,289) indica estrutura fraca: tratamos como **segmentação grosseira**, não como tipologia."),
+("md", "## 7. Municípios mais vulneráveis em 2025"),
 ("code", '''print(R["projecao"])
 proj = pd.read_csv(REPORTS / "projecao_risco_meta_2025.csv")
-print("municípios com prob. > 70%:", int((proj.prob_risco_proxima_meta > 0.7).sum()), "de", len(proj))
+print("municípios com índice de vulnerabilidade > 70%:", int((proj.prob_risco_proxima_meta > 0.7).sum()), "de", len(proj))
 display(proj.head(15).round(3))'''),
-("md", "A projeção usa o desempenho de 2024 como base e as metas oficiais de 2025. Pressupõe que a relação aprendida em 2023→2024 se mantém: é um alerta, não uma previsão garantida."),
-("md", "## 8. Fatores associados ao nível de alfabetização (regressão)"),
+("md", "A projeção usa o desempenho de 2024 e o contexto, **sem as metas de 2025** (a meta não é variável do modelo). Deve ser lida como um **índice de vulnerabilidade**, e pressupõe que a relação aprendida em 2023→2024 se mantém."),
+("md", "## 8. Ablação: por que a meta ficou de fora?"),
+("code", '''ab = pd.read_csv(REPORTS / "ablacao_risco.csv")
+display(ab.pivot(index="cenario", columns="modelo", values=["teste_roc_auc", "cv_por_uf_roc_auc"]).round(3))'''),
+("md", "A referência **com** a meta atinge 0,741 (Gradient Boosting) e 0,729 (logística); o **modelo final**, sem ela, 0,709 e 0,670. Só com contexto (sem meta e sem histórico), 0,688 e 0,665; com contexto sem IDEB/SAEB, 0,656 e 0,627 (0,52 entre estados). **O contexto prevê o risco acima do acaso, mas esse sinal quase não atravessa estados:** parte dele é geografia. Aceitamos o custo de 0,03 a 0,06 de ROC-AUC para que o modelo não aprenda a política de metas de cada estado."),
+("md", "## 9. Fatores associados ao nível de alfabetização (regressão)"),
 ("code", '''comp = pd.read_csv(REPORTS / "fatores_comparacao.csv")
 display(comp[["variante", "modelo", "n_variaveis", "r2_cv", "r2_por_uf", "r2_treino", "r2_teste", "mae_teste_pp"]].round(3))
 for v in ["contexto", "contexto_sem_desempenho"]:

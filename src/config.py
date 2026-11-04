@@ -35,6 +35,12 @@ USAR_UF_NO_MODELO = False
 UF_COLS = ("sigla_uf", "regiao")
 PREFIXOS_UF_PROXY = ("ext_pnad_uf__",)
 
+# Decisão analítica: a meta do ano-alvo NÃO entra no modelo de risco. Ela é o limiar do alvo e carrega a política
+# de metas de cada estado (funciona como um "código da UF"). O modelo estima o risco a partir do desempenho
+# anterior e do contexto do município. A ablação (src/modeling/ablation.py) mede o custo dessa decisão.
+USAR_META_NO_MODELO = False
+META_COLS = ("meta_alvo",)
+
 UF_REGIAO = {
     **dict.fromkeys(["AC", "AM", "AP", "PA", "RO", "RR", "TO"], "Norte"),
     **dict.fromkeys(["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"], "Nordeste"),

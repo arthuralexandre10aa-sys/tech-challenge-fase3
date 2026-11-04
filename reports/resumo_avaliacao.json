@@ -1,68 +1,68 @@
 {
   "top5_shap": [
     {
-      "feature": "meta_alvo",
-      "shap_medio_abs": 1.1870888503648687
+      "feature": "ext_inep_ideb__nota_saeb_matematica",
+      "shap_medio_abs": 0.2641966207092083
+    },
+    {
+      "feature": "ext_inep_ideb__taxa_aprovacao",
+      "shap_medio_abs": 0.22907425585118227
     },
     {
       "feature": "prof_ant",
-      "shap_medio_abs": 0.581671741539475
-    },
-    {
-      "feature": "ext_inep_ideb__nota_saeb_matematica",
-      "shap_medio_abs": 0.5603957763834113
+      "shap_medio_abs": 0.21471830932850686
     },
     {
       "feature": "ext_fundeb__nse",
-      "shap_medio_abs": 0.5354646712816715
+      "shap_medio_abs": 0.15838990222502372
     },
     {
-      "feature": "ext_inep_ideb__projecao",
-      "shap_medio_abs": 0.3971691489137059
+      "feature": "ext_atlas_idhm__taxa_ocupados_sem_carteira",
+      "shap_medio_abs": 0.13463558474704024
     }
   ],
   "top5_permutacao": [
     {
-      "feature": "meta_alvo",
-      "queda_roc_auc": 0.13672947594085422,
-      "desvio": 0.013540473691669792
+      "feature": "ext_inep_ideb__nota_saeb_matematica",
+      "queda_roc_auc": 0.048025600928006104,
+      "desvio": 0.006715367771029262
     },
     {
       "feature": "prof_ant",
-      "queda_roc_auc": 0.0965489772844074,
-      "desvio": 0.01162657340836028
+      "queda_roc_auc": 0.03123485749526454,
+      "desvio": 0.006914968934385744
     },
     {
-      "feature": "ext_inep_ideb__nota_saeb_matematica",
-      "queda_roc_auc": 0.09048848802549074,
-      "desvio": 0.00915998395014929
+      "feature": "ext_inep_ideb__taxa_aprovacao",
+      "queda_roc_auc": 0.02381154281015524,
+      "desvio": 0.006254922811754826
     },
     {
       "feature": "ext_fundeb__nse",
-      "queda_roc_auc": 0.05947168259841702,
-      "desvio": 0.006303292446281193
+      "queda_roc_auc": 0.016656938754533578,
+      "desvio": 0.003559727194581509
     },
     {
-      "feature": "ext_atlas_idhm__prop_pobreza_extrema",
-      "queda_roc_auc": 0.04149853897772486,
-      "desvio": 0.007910303080581004
+      "feature": "ext_atlas_idhm__taxa_ocupados_sem_carteira",
+      "queda_roc_auc": 0.015219410304979253,
+      "desvio": 0.0035184897124078906
     }
   ],
   "k_clusters": 2,
   "silhouette": {
-    "2": 0.288,
-    "3": 0.138,
-    "4": 0.111,
-    "5": 0.118,
+    "2": 0.289,
+    "3": 0.137,
+    "4": 0.122,
+    "5": 0.127,
     "6": 0.124,
-    "7": 0.103,
+    "7": 0.102,
     "8": 0.096
   },
   "ufs_maior_risco": [
-    "PA",
     "RS",
     "AP",
-    "RJ",
+    "PA",
+    "BA",
     "AM"
   ],
   "projecao": "projeção 2025 gerada para 5352 municípios"
