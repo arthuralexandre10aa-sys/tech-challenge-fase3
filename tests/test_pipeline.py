@@ -81,7 +81,8 @@ def test_uf_regiao_e_proxies_fora_das_features():
     cols = colunas_features(d)
     assert "sigla_uf" not in cols and "regiao" not in cols
     assert "ext_pnad_uf__renda" not in cols          # constante por UF = "código da UF"
-    assert "ext_atlas_idhm__idhm" in cols and "meta_alvo" in cols
+    assert "ext_atlas_idhm__idhm" in cols and "pct_ant" in cols
+    assert "meta_alvo" not in cols                   # limiar do alvo e política de metas do estado
 
 
 def test_pipeline_funciona_sem_coluna_de_uf():
@@ -135,3 +136,12 @@ def test_regra_do_1_erro_padrao_escolhe_o_que_menos_memoriza():
     assert escolhe_modelo(cmp)[0] == "random_forest"      # dentro de 1 EP e com menor gap; logreg ficou fora
     cmp.loc[cmp.modelo == "random_forest", "cv_roc_auc"] = 0.720
     assert escolhe_modelo(cmp)[0] == "gradient_boosting"  # rf saiu da margem
+
+
+def test_modelo_sem_meta_funciona_e_derivadas_dependentes_somem():
+    d = _df()
+    feats = [c for c in d.columns if c not in (TARGET, "meta_alvo", "sigla_uf", "regiao")]
+    p = monta_pipeline(candidatos()["logreg"][0]).fit(d[feats], d[TARGET])
+    assert np.isfinite(p.predict_proba(d[feats])[:, 1]).all()
+    from src.modeling.pipeline import nomes_features
+    assert not any("meta" in n or "gap_ant" in n for n in nomes_features(p))

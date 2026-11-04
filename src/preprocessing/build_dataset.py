@@ -1,8 +1,8 @@
 """Monta o dataset de modelagem a partir da Gold (Fase 2) + fontes externas.
 
 Desenho temporal (evita leakage):
-    features  = desempenho em ANO_ANT (2023) + meta de ANO_ALVO (conhecida de antemão)
-                + contexto territorial/socioeconômico/educacional
+    features  = desempenho em ANO_ANT (2023) + contexto territorial/socioeconômico/educacional
+                (a meta de ANO_ALVO define o alvo e fica FORA das features; ver config.USAR_META_NO_MODELO)
     alvo      = município NÃO atingiu a meta em ANO_ALVO (2024)
 
 Também corrige um bug herdado da Fase 2: onde não existe meta (todo 2023),
@@ -15,7 +15,8 @@ from __future__ import annotations
 import pandas as pd
 
 from src.config import (ANO_ALVO, ANO_ANT, DATA_EXT, DATA_PROC, DATA_RAW, FORBIDDEN_FEATURES,
-                        ID_COLS, PREFIXOS_UF_PROXY, TARGET, UF_COLS, UF_REGIAO, USAR_UF_NO_MODELO)
+                        ID_COLS, META_COLS, PREFIXOS_UF_PROXY, TARGET, UF_COLS, UF_REGIAO, USAR_META_NO_MODELO,
+                        USAR_UF_NO_MODELO)
 
 NAO_FEATURES = set(ID_COLS) | FORBIDDEN_FEATURES | {"nome_uf", "ano"}
 
@@ -70,10 +71,13 @@ def anexa_externas(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
 def colunas_features(df: pd.DataFrame) -> list[str]:
     """Colunas usadas pelo modelo. Com ``USAR_UF_NO_MODELO=False`` removem-se UF, região e
-    fontes estaduais (que identificariam a UF indiretamente)."""
+    fontes estaduais (que identificariam a UF indiretamente); com ``USAR_META_NO_MODELO=False``,
+    a meta do ano-alvo (limiar do alvo e política de metas do estado)."""
     excluir = set(NAO_FEATURES)
     if not USAR_UF_NO_MODELO:
         excluir |= set(UF_COLS)
+    if not USAR_META_NO_MODELO:
+        excluir |= set(META_COLS)
     cols = [c for c in df.columns if c not in excluir]
     if not USAR_UF_NO_MODELO:
         cols = [c for c in cols if not c.startswith(PREFIXOS_UF_PROXY)]
