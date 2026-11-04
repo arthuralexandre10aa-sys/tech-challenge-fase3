@@ -1,15 +1,22 @@
 # Roteiro do vídeo executivo (até 5 min) — reunião com gestores
 
 **Formato:** simular apresentação a secretários/gestores. Slides curtos, sem jargão. Sugestão de divisão entre os integrantes.
-O deck correspondente está em `docs/` (`tech_challenge_fase3_video_executivo.pptx`) e traz este roteiro nas notas do apresentador.
+O deck correspondente é `docs/tech_challenge_fase3_video_executivo.pptx` (11 slides) e traz este roteiro nas notas do apresentador.
+Os títulos dos slides 5 a 9 reproduzem as perguntas de negócio do enunciado.
 
-| Tempo | Conteúdo | Apoio visual |
+| Tempo | Slide | Conteúdo |
 |---|---|---|
-| 0:00–0:40 | **O problema.** Saber o resultado de ontem não basta: precisamos antecipar quais municípios podem não atingir a meta de alfabetização. Dos 5.232 municípios, 46% ficaram abaixo da meta em 2024, e a taxa varia de 8% (CE) a 92% (RS). | slide 2: risco, meta e resultado médio por estado |
-| 0:40–1:30 | **O que fizemos.** Juntamos os dados da Fase 2 com IBGE, INEP, Atlas e FUNDEB e treinamos um modelo que, com o desempenho de 2023 e o contexto do município, prevê quem fica abaixo da meta. **Não usamos o estado nem a própria meta como informação.** | slide 3: dados → modelo → ranking |
-| 1:30–2:30 | **Resultado.** O modelo ordena o risco com ROC-AUC 0,71 e, com o limiar ajustado, identifica 88% dos municípios que ficaram abaixo da meta, ao custo de alarmes falsos. Tirar a meta custou cerca de 0,03 de ROC-AUC e evita que o modelo aprenda a política de metas de cada estado. | slide 4: `modelo_roc_pr.png` |
-| 2:30–3:30 | **Insights.** Lideram a nota de matemática do SAEB, a proficiência de 2023, a taxa de aprovação e o nível socioeconômico. No nível de alfabetização, frequência escolar e analfabetismo infantil lideram. O sinal do contexto é em parte geográfico: entre estados nunca vistos o ROC-AUC cai para 0,57. | slides 5 e 6: `shap_summary.png`, ablação, fatores de contexto |
-| 3:30–4:20 | **Uso na política pública.** Triagem de municípios para apoio técnico (649 com índice de vulnerabilidade acima de 70% em 2025), monitoramento anual e **revisão das metas** onde o risco previsto fica abaixo do observado (RS). | slide 7: quatro usos |
-| 4:20–5:00 | **Limites e próximos passos.** Só dois anos de dados; o modelo estima vulnerabilidade, não o cumprimento de uma meta específica; fatores são associações, não causas. Próximo: mais anos de dados e CadÚnico. | slide 8 |
+| 0:00–0:15 | 1 · Capa | Apresentar o grupo: precisamos antecipar quais municípios podem não atingir a meta de alfabetização. |
+| 0:15–0:45 | 2 · Quem ficará abaixo da meta? | 5.232 municípios, 46% abaixo da meta em 2024; risco de 8% (CE) a 92% (RS); metas médias de 36% a 79%. |
+| 0:45–1:10 | 3 · Como o modelo funciona | Dados da Fase 2 + IBGE, INEP, Atlas e FUNDEB; Gradient Boosting com desempenho de 2023 e contexto; sem estado, região ou meta. |
+| 1:10–1:40 | 4 · O que o modelo entrega | ROC-AUC 0,71; 88% dos municípios em risco identificados (limiar 0,32); 0,57 em estados nunca vistos; tirar a meta custou 0,03. |
+| 1:40–2:10 | 5 · Quais variáveis possuem maior influência nos modelos? | SHAP: SAEB, proficiência de 2023, aprovação, NSE; ablação (0,74 com a meta, 0,71 sem, 0,66 só com fatores socioeconômicos). |
+| 2:10–2:35 | 6 · Quais fatores mais impactam a alfabetização? | Sem SAEB: frequência escolar, analfabetismo de 11 a 14 anos, NSE, infraestrutura. Associações, não causas. |
+| 2:35–3:05 | 7 · Quais municípios apresentam maior risco educacional? | Risco previsto × observado por UF; subestimação em RS e BA; cinco municípios de maior risco. |
+| 3:05–3:30 | 8 · Quais regiões possuem padrões semelhantes? | Dois grupos (Nordeste/Norte × Sudeste/Sul); IDHM 0,59 × 0,71; separação grosseira. |
+| 3:30–3:55 | 9 · Como prever municípios que podem não atingir metas futuras? | 649 de 5.352 com índice de vulnerabilidade acima de 70% em 2025; sem usar as metas de 2025. |
+| 3:55–4:25 | 10 · Como apoia a política pública | Priorizar, monitorar, revisar metas, agir nas causas. |
+| 4:25–4:55 | 11 · Limites e próximos passos | Dois anos de dados; 0,57 em estados novos; vulnerabilidade, não meta; próximos passos. |
 
 **Mensagem final:** "É uma ferramenta de triagem para priorizar apoio, não um veredito sobre gestões."
+Se o tempo estourar, o slide 3 (como o modelo funciona) pode ser falado em 15 segundos.
